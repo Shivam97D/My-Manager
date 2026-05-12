@@ -1,0 +1,85 @@
+/* ================================================
+   THEME — Shivam's Workspace
+   Paper-light & Charcoal-dark token system
+   ================================================ */
+
+:root {
+  /* Paper Light Theme */
+  --bg-body:       #f5f0e8;
+  --bg-card:       #fffef9;
+  --bg-card-alt:   #faf7f2;
+  --bg-input:      #faf7f2;
+  --bg-hover:      #ede8df;
+  --bg-modal:      #fffef9;
+
+  --text-primary:  #2c2420;
+  --text-secondary:#7a6f68;
+  --text-muted:    #b0a89f;
+  --text-inverse:  #fffef9;
+
+  --accent:        #6366f1;
+  --accent-hover:  #4f46e5;
+  --accent-soft:   #ede9fe;
+  --accent-text:   #4f46e5;
+
+  --success:       #16a34a;
+  --success-soft:  #dcfce7;
+  --warning:       #d97706;
+  --warning-soft:  #fef3c7;
+  --danger:        #dc2626;
+  --danger-soft:   #fee2e2;
+
+  --priority-high:   #dc2626;
+  --priority-medium: #d97706;
+  --priority-low:    #16a34a;
+
+  --border:        #e0d8cc;
+  --border-focus:  #6366f1;
+
+  --shadow-sm: 0 1px 3px rgba(44,36,32,0.06);
+  --shadow:    0 2px 12px rgba(44,36,32,0.08);
+  --shadow-md: 0 4px 20px rgba(44,36,32,0.10);
+  --shadow-lg: 0 8px 32px rgba(44,36,32,0.12);
+
+  --radius-sm: 8px;
+  --radius:    12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  --nav-bg:     rgba(250, 247, 242, 0.92);
+  --nav-border: #e0d8cc;
+
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --transition: 0.2s ease;
+}
+
+/* ---- Dark Theme ---- */
+[data-theme="dark"] {
+  --bg-body:       #1a1714;
+  --bg-card:       #231f1c;
+  --bg-card-alt:   #2a2520;
+  --bg-input:      #2a2520;
+  --bg-hover:      #332d28;
+  --bg-modal:      #231f1c;
+
+  --text-primary:  #f0ece4;
+  --text-secondary:#a89e95;
+  --text-muted:    #6b6358;
+  --text-inverse:  #1a1714;
+
+  --accent:        #818cf8;
+  --accent-hover:  #6366f1;
+  --accent-soft:   #2d2b4e;
+  --accent-text:   #a5b4fc;
+
+  --border:        #3a3330;
+  --border-focus:  #818cf8;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.30);
+  --shadow:    0 2px 12px rgba(0,0,0,0.35);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.40);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.45);
+
+  --nav-bg:     rgba(26, 23, 20, 0.92);
+  --nav-border: #3a3330;
+}
