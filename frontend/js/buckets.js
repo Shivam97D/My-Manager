@@ -87,14 +87,24 @@ const Buckets = (() => {
     /* Editable bucket title */
     const titleEl = card.querySelector('.bucket-title');
 
-    titleEl.addEventListener('blur', () => {
+    titleEl.addEventListener('blur', async () => {
       const newName = titleEl.textContent.trim();
       if (newName && newName !== bucket.name) {
-        Storage.updateBucket(bucket.id, { name: newName });
-        bucket.name = newName;
-        /* Update aria-label on the quick-add input */
-        const qi = card.querySelector('.quick-task-input');
-        if (qi) qi.setAttribute('aria-label', `Quick-add task to ${newName}`);
+        if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+          const res = await API.buckets.update(bucket.id, { name: newName });
+          if (res.ok) {
+            UI.toast('Bucket renamed', 'success');
+            App.loadData();
+          } else {
+            UI.toast(res.error || 'Rename failed', 'error');
+            titleEl.textContent = bucket.name;
+          }
+        } else {
+          Storage.updateBucket(bucket.id, { name: newName });
+          bucket.name = newName;
+          const qi = card.querySelector('.quick-task-input');
+          if (qi) qi.setAttribute('aria-label', `Quick-add task to ${newName}`);
+        }
       }
     });
 
@@ -103,12 +113,22 @@ const Buckets = (() => {
     });
 
     /* Delete bucket */
-    card.querySelector('.delete-bucket-btn').addEventListener('click', () => {
+    card.querySelector('.delete-bucket-btn').addEventListener('click', async () => {
       if (window.confirm(`Delete bucket "${bucket.name}"?\nAll tasks inside will be removed.`)) {
-        Storage.deleteBucket(bucket.id);
-        renderAll();
-        App.updateStats();
-        UI.toast('Bucket deleted', 'default');
+        if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+          const res = await API.buckets.delete(bucket.id);
+          if (res.ok) {
+            UI.toast('Bucket deleted', 'default');
+            App.loadData();
+          } else {
+            UI.toast(res.error || 'Unable to delete bucket', 'error');
+          }
+        } else {
+          Storage.deleteBucket(bucket.id);
+          renderAll();
+          App.updateStats();
+          UI.toast('Bucket deleted', 'default');
+        }
       }
     });
 
@@ -116,16 +136,26 @@ const Buckets = (() => {
     const quickInput = card.querySelector('.quick-task-input');
     const quickBtn   = card.querySelector('.quick-add-btn');
 
-    const _doQuickAdd = () => {
+    const _doQuickAdd = async () => {
       const title = quickInput.value.trim();
       if (!title) return;
-      Storage.addTask(bucket.id, { title });
-      quickInput.value = '';
-      /* Full re-render so task count badge updates too */
-      renderAll();
-      App.updateStats();
-      if (Router.getCurrent() === 'tasks') Tasks.renderFlatList();
-      UI.toast('Task added', 'success');
+      if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+        const res = await API.tasks.create(bucket.id, { title });
+        if (res.ok) {
+          quickInput.value = '';
+          UI.toast('Task added', 'success');
+          App.loadData();
+        } else {
+          UI.toast(res.error || 'Unable to add task online', 'error');
+        }
+      } else {
+        Storage.addTask(bucket.id, { title });
+        quickInput.value = '';
+        renderAll();
+        App.updateStats();
+        if (Router.getCurrent() === 'tasks') Tasks.renderFlatList();
+        UI.toast('Task added', 'success');
+      }
     };
 
     quickBtn.addEventListener('click', _doQuickAdd);

@@ -115,6 +115,14 @@ const UI = (() => {
   /* ================================================
      AUTH SECTION IN NAVBAR
      ================================================ */
+  function _firstNameFromUser(user) {
+    if (!user) return '';
+    const rawName = (user.name || '').trim();
+    if (rawName) return rawName.split(/\s+/)[0];
+    const email = (user.email || '').trim();
+    return email ? email.split('@')[0] : '';
+  }
+
   function updateAuthUI(user) {
     const authSection   = document.getElementById('authSection');
     const userSection   = document.getElementById('userSection');
@@ -125,11 +133,15 @@ const UI = (() => {
       authSection?.classList.add('hidden');
       userSection?.classList.remove('hidden');
       mobileAuthRow?.classList.add('hidden');
-      if (userNameEl) userNameEl.textContent = user.name || user.email;
+      if (userNameEl) {
+        const first = _firstNameFromUser(user);
+        userNameEl.textContent = first ? `👤 ${first}` : '';
+      }
     } else {
       authSection?.classList.remove('hidden');
       userSection?.classList.add('hidden');
       mobileAuthRow?.classList.remove('hidden');
+      if (userNameEl) userNameEl.textContent = '';
     }
   }
 

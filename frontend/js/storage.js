@@ -42,10 +42,23 @@ const Storage = (() => {
     }
   }
 
+  function _set(partial) {
+    const data = get();
+    if (partial.buckets !== undefined) data.buckets = partial.buckets;
+    if (partial.goals   !== undefined) data.goals   = partial.goals;
+    if (partial.notes   !== undefined) data.notes   = partial.notes;
+    save(data);
+    return data;
+  }
+
   /* ---- BUCKET OPERATIONS ---- */
 
   function getBuckets() {
     return get().buckets || [];
+  }
+
+  function setBuckets(buckets) {
+    _set({ buckets: Array.isArray(buckets) ? buckets : [] });
   }
 
   function addBucket(name, type = 'todo') {
@@ -150,6 +163,10 @@ const Storage = (() => {
     return get().goals || [];
   }
 
+  function setGoals(goals) {
+    _set({ goals: Array.isArray(goals) ? goals : [] });
+  }
+
   function addGoal(goalData) {
     const data = get();
     if (!data.goals) data.goals = [];
@@ -190,6 +207,10 @@ const Storage = (() => {
     return get().notes || [];
   }
 
+  function setNotes(notes) {
+    _set({ notes: Array.isArray(notes) ? notes : [] });
+  }
+
   function addNote(noteData) {
     const data = get();
     if (!data.notes) data.notes = [];
@@ -226,9 +247,9 @@ const Storage = (() => {
   return {
     uid,
     get, save,
-    getBuckets, addBucket, updateBucket, deleteBucket,
+    getBuckets, setBuckets, addBucket, updateBucket, deleteBucket,
     getAllTasks, addTask, updateTask, deleteTask, toggleTask,
-    getGoals,   addGoal,  updateGoal,  deleteGoal,
-    getNotes,   addNote,  updateNote,  deleteNote
+    getGoals,   setGoals,  addGoal,  updateGoal,  deleteGoal,
+    getNotes,   setNotes,  addNote,  updateNote,  deleteNote
   };
 })();

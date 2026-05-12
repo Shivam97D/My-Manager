@@ -110,6 +110,20 @@ p  { color: var(--text-secondary); line-height: 1.6; }
   flex-shrink: 0;
 }
 
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition);
+}
+
+.user-section:hover {
+  border-color: var(--border);
+}
+
 .theme-toggle {
   background: none;
   border: 1.5px solid var(--border);

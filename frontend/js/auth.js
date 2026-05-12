@@ -27,6 +27,7 @@ const Auth = (() => {
         _currentUser = { name: email.split('@')[0], email, offline: true };
         UI.updateAuthUI(_currentUser);
         UI.closeModal('authModal');
+        App.loadData();
       }
     });
 
@@ -94,6 +95,7 @@ const Auth = (() => {
         if (result.ok) {
           _currentUser = result.data.user;
           UI.updateAuthUI(_currentUser);
+          App.loadData();
         } else {
           API.setToken(null);
         }
@@ -106,6 +108,7 @@ const Auth = (() => {
     _currentUser = null;
     UI.updateAuthUI(null);
     UI.toast('Logged out', 'default');
+    App.loadData();
   }
 
   function getUser()    { return _currentUser; }

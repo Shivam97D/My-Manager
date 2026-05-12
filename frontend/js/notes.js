@@ -43,11 +43,21 @@ const Notes = (() => {
     `;
 
     card.querySelector('.edit-note-btn').addEventListener('click', () => openNoteModal(note));
-    card.querySelector('.del-note-btn').addEventListener('click', () => {
+    card.querySelector('.del-note-btn').addEventListener('click', async () => {
       if (window.confirm('Delete this note?')) {
-        Storage.deleteNote(note.id);
-        renderAll();
-        UI.toast('Note deleted', 'default');
+        if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+          const res = await API.notes.delete(note.id);
+          if (res.ok) {
+            UI.toast('Note deleted', 'default');
+            App.loadData();
+          } else {
+            UI.toast(res.error || 'Unable to delete note', 'error');
+          }
+        } else {
+          Storage.deleteNote(note.id);
+          renderAll();
+          UI.toast('Note deleted', 'default');
+        }
       }
     });
 
@@ -74,7 +84,7 @@ const Notes = (() => {
 
   /* ---- Init note form & color picker ---- */
   function init() {
-    document.getElementById('noteForm').addEventListener('submit', (e) => {
+    document.getElementById('noteForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const id      = document.getElementById('noteModalId').value;
       const title   = document.getElementById('noteTitleInput').value.trim();
@@ -82,16 +92,33 @@ const Notes = (() => {
 
       if (!title) return;
 
-      if (id) {
-        Storage.updateNote(id, { title, content, color: _selectedColor });
-        UI.toast('Note updated', 'success');
-      } else {
-        Storage.addNote({ title, content, color: _selectedColor });
-        UI.toast('Note saved 📝', 'success');
-      }
+      if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+        let res;
+        if (id) {
+          res = await API.notes.update(id, { title, content, color: _selectedColor });
+        } else {
+          res = await API.notes.create({ title, content, color: _selectedColor });
+        }
 
-      UI.closeModal('noteModal');
-      renderAll();
+        if (res.ok) {
+          UI.toast(id ? 'Note updated' : 'Note saved 📝', 'success');
+          UI.closeModal('noteModal');
+          App.loadData();
+        } else {
+          UI.toast(res.error || 'Unable to save note online', 'error');
+        }
+      } else {
+        if (id) {
+          Storage.updateNote(id, { title, content, color: _selectedColor });
+          UI.toast('Note updated', 'success');
+        } else {
+          Storage.addNote({ title, content, color: _selectedColor });
+          UI.toast('Note saved 📝', 'success');
+        }
+
+        UI.closeModal('noteModal');
+        renderAll();
+      }
     });
 
     /* Color picker dots */

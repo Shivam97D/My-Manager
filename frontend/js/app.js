@@ -45,7 +45,12 @@ const App = (() => {
     const hour    = new Date().getHours();
     const greet   = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     const greetEl = document.getElementById('greetingText');
-    if (greetEl) greetEl.textContent = `${greet}, Shivam ✦`;
+    if (greetEl) {
+      const user      = Auth.getUser?.() || null;
+      const rawName   = user?.name?.trim() || '';
+      const firstName = rawName ? rawName.split(/\s+/)[0] : (user?.email ? user.email.split('@')[0] : 'Shivam');
+      greetEl.textContent = `${greet}, ${firstName || 'there'} ✦`;
+    }
 
     const dateEl = document.getElementById('dateText');
     if (dateEl) {
@@ -59,13 +64,55 @@ const App = (() => {
   }
 
   /* ---- Load / refresh all data ---- */
-  function loadData() {
+  async function loadData() {
+    _updateGreeting();
+
+    const user = Auth.getUser?.();
+    const shouldSyncRemote = Auth.isLoggedIn && Auth.isLoggedIn() && !user?.offline;
+
+    if (shouldSyncRemote) {
+      try {
+        const [bucketRes, goalRes, noteRes] = await Promise.all([
+          API.buckets.getAll(),
+          API.goals.getAll(),
+          API.notes.getAll()
+        ]);
+
+        if (bucketRes.ok) {
+          const buckets = (bucketRes.data || []).map(_normaliseBucketFromServer);
+          Storage.setBuckets(buckets);
+        }
+
+        if (goalRes.ok) {
+          const goals = (goalRes.data || []).map(_normaliseGoalFromServer);
+          Storage.setGoals(goals);
+        }
+
+        if (noteRes.ok) {
+          const notes = (noteRes.data || []).map(_normaliseNoteFromServer);
+          Storage.setNotes(notes);
+        }
+
+        if (!bucketRes.ok || !goalRes.ok || !noteRes.ok) {
+          UI.toast('Some data failed to sync. Showing last saved items.', 'warning');
+        }
+      } catch (err) {
+        console.warn('Remote sync failed:', err);
+        UI.toast('Online sync failed — working with cached data.', 'warning');
+      }
+    }
+
     Buckets.renderAll();
     updateStats();
+
+    const current = Router.getCurrent?.() || 'home';
+    if (current === 'tasks') Tasks.renderFlatList();
+    if (current === 'goals') Goals.renderAll();
+    if (current === 'notes') Notes.renderAll();
   }
 
   /* ---- Create a new bucket ---- */
-  function createBucket() {
+  async function createBucket() {
     const input      = document.getElementById('bucketNameInput');
     const typeSelect = document.getElementById('bucketTypeSelect');
     const name       = input.value.trim();
@@ -75,11 +122,22 @@ const App = (() => {
       return;
     }
 
-    Storage.addBucket(name, typeSelect.value);
-    input.value = '';
-    Buckets.renderAll();
-    updateStats();
-    UI.toast('Bucket created!', 'success');
+    if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+      const result = await API.buckets.create({ name, type: typeSelect.value });
+      if (result.ok) {
+        input.value = '';
+        UI.toast('Bucket created!', 'success');
+        loadData();
+      } else {
+        UI.toast(result.error || 'Failed to create bucket online.', 'error');
+      }
+    } else {
+      Storage.addBucket(name, typeSelect.value);
+      input.value = '';
+      Buckets.renderAll();
+      updateStats();
+      UI.toast('Bucket created!', 'success');
+    }
   }
 
   /* ---- Update stats chips on Home page ---- */
@@ -126,3 +184,43 @@ const App = (() => {
   /* Public interface */
   return { loadData, createBucket, updateStats, onPageChange };
 })();
+
+function _normaliseBucketFromServer(bucket) {
+  return {
+    id: bucket._id || bucket.id,
+    name: bucket.name,
+    type: bucket.type || 'todo',
+    tasks: (bucket.tasks || []).map(task => ({
+      id: task._id || task.id,
+      title: task.title,
+      note: task.note || '',
+      priority: task.priority || 'medium',
+      completed: !!task.completed,
+      dueDate: task.dueDate || null,
+      createdAt: task.createdAt || new Date().toISOString()
+    })),
+    createdAt: bucket.createdAt || new Date().toISOString()
+  };
+}
+
+function _normaliseGoalFromServer(goal) {
+  return {
+    id: goal._id || goal.id,
+    title: goal.title,
+    description: goal.description || '',
+    category: goal.category || 'personal',
+    progress: typeof goal.progress === 'number' ? goal.progress : 0,
+    targetDate: goal.targetDate || null,
+    createdAt: goal.createdAt || new Date().toISOString()
+  };
+}
+
+function _normaliseNoteFromServer(note) {
+  return {
+    id: note._id || note.id,
+    title: note.title,
+    content: note.content || '',
+    color: note.color || '#fffef9',
+    createdAt: note.createdAt || new Date().toISOString()
+  };
+}

@@ -41,11 +41,22 @@ const Tasks = (() => {
     `;
 
     /* Toggle complete */
-    el.querySelector('.task-checkbox').addEventListener('change', () => {
-      Storage.toggleTask(bucketId, task.id);
-      el.classList.toggle('completed');
-      App.updateStats();
-      if (Router.getCurrent() === 'tasks') renderFlatList();
+    el.querySelector('.task-checkbox').addEventListener('change', async () => {
+      if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+        const res = await API.tasks.toggle(bucketId, task.id);
+        if (res.ok) {
+          UI.toast(res.data?.completed ? 'Task marked complete' : 'Task marked pending', 'success');
+          App.loadData();
+        } else {
+          UI.toast(res.error || 'Unable to update task', 'error');
+          el.querySelector('.task-checkbox').checked = task.completed;
+        }
+      } else {
+        Storage.toggleTask(bucketId, task.id);
+        el.classList.toggle('completed');
+        App.updateStats();
+        if (Router.getCurrent() === 'tasks') renderFlatList();
+      }
     });
 
     /* Edit */
@@ -55,14 +66,24 @@ const Tasks = (() => {
     });
 
     /* Delete */
-    el.querySelector('.del-task-btn').addEventListener('click', (e) => {
+    el.querySelector('.del-task-btn').addEventListener('click', async (e) => {
       e.stopPropagation();
       if (window.confirm('Delete this task?')) {
-        Storage.deleteTask(bucketId, task.id);
-        Buckets.renderAll();
-        if (Router.getCurrent() === 'tasks') renderFlatList();
-        App.updateStats();
-        UI.toast('Task deleted', 'default');
+        if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+          const res = await API.tasks.delete(bucketId, task.id);
+          if (res.ok) {
+            UI.toast('Task deleted', 'default');
+            App.loadData();
+          } else {
+            UI.toast(res.error || 'Unable to delete task', 'error');
+          }
+        } else {
+          Storage.deleteTask(bucketId, task.id);
+          Buckets.renderAll();
+          if (Router.getCurrent() === 'tasks') renderFlatList();
+          App.updateStats();
+          UI.toast('Task deleted', 'default');
+        }
       }
     });
 
@@ -141,24 +162,44 @@ const Tasks = (() => {
       </div>
     `;
 
-    el.querySelector('.task-checkbox').addEventListener('change', () => {
-      Storage.toggleTask(task.bucketId, task.id);
-      el.classList.toggle('completed');
-      App.updateStats();
-      Buckets.renderAll();
+    el.querySelector('.task-checkbox').addEventListener('change', async () => {
+      if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+        const res = await API.tasks.toggle(task.bucketId, task.id);
+        if (res.ok) {
+          App.loadData();
+        } else {
+          UI.toast(res.error || 'Unable to update task', 'error');
+          el.querySelector('.task-checkbox').checked = task.completed;
+        }
+      } else {
+        Storage.toggleTask(task.bucketId, task.id);
+        el.classList.toggle('completed');
+        App.updateStats();
+        Buckets.renderAll();
+      }
     });
 
     el.querySelector('.edit-flat-btn').addEventListener('click', () => {
       openTaskModal(task.bucketId, task);
     });
 
-    el.querySelector('.del-flat-btn').addEventListener('click', () => {
+    el.querySelector('.del-flat-btn').addEventListener('click', async () => {
       if (window.confirm('Delete this task?')) {
-        Storage.deleteTask(task.bucketId, task.id);
-        renderFlatList();
-        Buckets.renderAll();
-        App.updateStats();
-        UI.toast('Task deleted', 'default');
+        if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+          const res = await API.tasks.delete(task.bucketId, task.id);
+          if (res.ok) {
+            UI.toast('Task deleted', 'default');
+            App.loadData();
+          } else {
+            UI.toast(res.error || 'Unable to delete task', 'error');
+          }
+        } else {
+          Storage.deleteTask(task.bucketId, task.id);
+          renderFlatList();
+          Buckets.renderAll();
+          App.updateStats();
+          UI.toast('Task deleted', 'default');
+        }
       }
     });
 
@@ -184,7 +225,7 @@ const Tasks = (() => {
      ================================================ */
   function init() {
     /* Form submit */
-    document.getElementById('taskForm').addEventListener('submit', (e) => {
+    document.getElementById('taskForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const bucketId = document.getElementById('taskModalBucketId').value;
       const taskId   = document.getElementById('taskModalTaskId').value;
@@ -195,18 +236,35 @@ const Tasks = (() => {
 
       if (!title) return;
 
-      if (taskId) {
-        Storage.updateTask(bucketId, taskId, { title, note, priority, dueDate });
-        UI.toast('Task updated', 'success');
-      } else {
-        Storage.addTask(bucketId, { title, note, priority, dueDate });
-        UI.toast('Task added', 'success');
-      }
+      if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+        let result;
+        if (taskId) {
+          result = await API.tasks.update(bucketId, taskId, { title, note, priority, dueDate });
+        } else {
+          result = await API.tasks.create(bucketId, { title, note, priority, dueDate });
+        }
 
-      UI.closeModal('taskModal');
-      Buckets.renderAll();
-      if (Router.getCurrent() === 'tasks') renderFlatList();
-      App.updateStats();
+        if (result.ok) {
+          UI.toast(taskId ? 'Task updated' : 'Task added', 'success');
+          UI.closeModal('taskModal');
+          App.loadData();
+        } else {
+          UI.toast(result.error || 'Unable to save task online', 'error');
+        }
+      } else {
+        if (taskId) {
+          Storage.updateTask(bucketId, taskId, { title, note, priority, dueDate });
+          UI.toast('Task updated', 'success');
+        } else {
+          Storage.addTask(bucketId, { title, note, priority, dueDate });
+          UI.toast('Task added', 'success');
+        }
+
+        UI.closeModal('taskModal');
+        Buckets.renderAll();
+        if (Router.getCurrent() === 'tasks') renderFlatList();
+        App.updateStats();
+      }
     });
 
     /* Filter tabs */

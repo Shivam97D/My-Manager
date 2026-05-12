@@ -68,12 +68,22 @@ const Goals = (() => {
     `;
 
     card.querySelector('.edit-goal-btn').addEventListener('click', () => openGoalModal(goal));
-    card.querySelector('.del-goal-btn').addEventListener('click', () => {
+    card.querySelector('.del-goal-btn').addEventListener('click', async () => {
       if (window.confirm('Delete this goal?')) {
-        Storage.deleteGoal(goal.id);
-        renderAll();
-        App.updateStats();
-        UI.toast('Goal deleted', 'default');
+        if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+          const res = await API.goals.delete(goal.id);
+          if (res.ok) {
+            UI.toast('Goal deleted', 'default');
+            App.loadData();
+          } else {
+            UI.toast(res.error || 'Unable to delete goal', 'error');
+          }
+        } else {
+          Storage.deleteGoal(goal.id);
+          renderAll();
+          App.updateStats();
+          UI.toast('Goal deleted', 'default');
+        }
       }
     });
 
@@ -98,7 +108,7 @@ const Goals = (() => {
 
   /* ---- Init goal form & progress slider ---- */
   function init() {
-    document.getElementById('goalForm').addEventListener('submit', (e) => {
+    document.getElementById('goalForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const id          = document.getElementById('goalModalId').value;
       const title       = document.getElementById('goalTitleInput').value.trim();
@@ -109,17 +119,34 @@ const Goals = (() => {
 
       if (!title) return;
 
-      if (id) {
-        Storage.updateGoal(id, { title, description, category, targetDate, progress });
-        UI.toast('Goal updated', 'success');
-      } else {
-        Storage.addGoal({ title, description, category, targetDate, progress });
-        UI.toast('Goal added! 🎯', 'success');
-      }
+      if (Auth.isLoggedIn && Auth.isLoggedIn()) {
+        let res;
+        if (id) {
+          res = await API.goals.update(id, { title, description, category, targetDate, progress });
+        } else {
+          res = await API.goals.create({ title, description, category, targetDate, progress });
+        }
 
-      UI.closeModal('goalModal');
-      renderAll();
-      App.updateStats();
+        if (res.ok) {
+          UI.toast(id ? 'Goal updated' : 'Goal added! 🎯', 'success');
+          UI.closeModal('goalModal');
+          App.loadData();
+        } else {
+          UI.toast(res.error || 'Unable to save goal online', 'error');
+        }
+      } else {
+        if (id) {
+          Storage.updateGoal(id, { title, description, category, targetDate, progress });
+          UI.toast('Goal updated', 'success');
+        } else {
+          Storage.addGoal({ title, description, category, targetDate, progress });
+          UI.toast('Goal added! 🎯', 'success');
+        }
+
+        UI.closeModal('goalModal');
+        renderAll();
+        App.updateStats();
+      }
     });
 
     /* Live progress slider value */

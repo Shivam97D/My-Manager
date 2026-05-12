@@ -18,6 +18,8 @@
 - [x] Create .gitignore
 - [x] Make API base URL configurable via meta tag / window override
 - [x] Add production middleware (helmet, compression, morgan) + multi-origin CORS
+- [x] Polish navbar user badge & greeting with profile emoji and first-name pull (2026-05-13 02:40 IST)
+- [x] Sync frontend data with backend (buckets, tasks, goals, notes CRUD) with offline fallback (2026-05-13 02:40 IST)
 
 ---
 
