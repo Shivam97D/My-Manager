@@ -3,9 +3,10 @@
    Task items, flat list, modal, filter/sort/search
    ================================================ */
 const Tasks = (() => {
-  let _filter  = 'all';
-  let _sort    = 'newest';
-  let _search  = '';
+  let _filter        = 'all';
+  let _sort          = 'newest';
+  let _search        = '';
+  let _bucketFilter  = null; // stores active bucket ID when filtering
 
   /* ================================================
      TASK ITEM — used inside bucket cards
@@ -95,7 +96,14 @@ const Tasks = (() => {
      ================================================ */
   function renderFlatList() {
     const container = document.getElementById('tasksFlatList');
+    if (!container) return;
+
     let tasks = Storage.getAllTasks();
+
+    /* Bucket filter */
+    if (_bucketFilter) {
+      tasks = tasks.filter(t => t.bucketId === _bucketFilter);
+    }
 
     /* Filter */
     if (_filter === 'pending')   tasks = tasks.filter(t => !t.completed);
@@ -122,15 +130,22 @@ const Tasks = (() => {
     container.innerHTML = '';
 
     if (tasks.length === 0) {
+      const activeBucket = _bucketFilter
+        ? Storage.getBuckets().find(b => b.id === _bucketFilter)
+        : null;
+      const subtitle = activeBucket
+        ? `No tasks yet inside “${activeBucket.name}”.`
+        : 'Add tasks from your buckets, or adjust your filter.';
       container.innerHTML = UI.emptyState(
         '✅',
         'No tasks found',
-        'Add tasks from your buckets on the Home page, or adjust your filter.'
+        subtitle
       );
-      return;
     }
 
     tasks.forEach(task => container.appendChild(_createFlatItem(task)));
+
+    _updateActiveFilterBadge(tasks.length);
   }
 
   /* Build a flat task item row */
@@ -209,14 +224,63 @@ const Tasks = (() => {
   /* ================================================
      TASK MODAL — add / edit
      ================================================ */
-  function openTaskModal(bucketId, task = null) {
-    document.getElementById('taskModalBucketId').value = bucketId  || '';
-    document.getElementById('taskModalTaskId').value   = task ? task.id : '';
-    document.getElementById('taskModalTitle').textContent = task ? 'Edit Task' : 'Add Task';
-    document.getElementById('taskTitleInput').value    = task ? _esc(task.title)       : '';
-    document.getElementById('taskNoteInput').value     = task ? (task.note  || '')     : '';
-    document.getElementById('taskPriorityInput').value = task ? (task.priority || 'medium') : 'medium';
-    document.getElementById('taskDueDateInput').value  = task ? (task.dueDate  || '')  : '';
+  function openTaskModal(bucketId = '', task = null) {
+    const hiddenBucketInput = document.getElementById('taskModalBucketId');
+    const hiddenTaskInput   = document.getElementById('taskModalTaskId');
+    const titleEl           = document.getElementById('taskModalTitle');
+    const nameInput         = document.getElementById('taskTitleInput');
+    const noteInput         = document.getElementById('taskNoteInput');
+    const prioritySelect    = document.getElementById('taskPriorityInput');
+    const dueInput          = document.getElementById('taskDueDateInput');
+    const bucketField       = document.getElementById('taskBucketField');
+    const bucketSelect      = document.getElementById('taskBucketSelect');
+
+    const buckets = Storage.getBuckets();
+    bucketSelect.innerHTML = '';
+    buckets.forEach(b => {
+      const option = document.createElement('option');
+      option.value = b.id;
+      option.textContent = b.name;
+      bucketSelect.appendChild(option);
+    });
+
+    let effectiveBucketId = bucketId || task?.bucketId || '';
+    if (!effectiveBucketId && buckets.length > 0) {
+      effectiveBucketId = buckets[0].id;
+    }
+
+    if (!effectiveBucketId) {
+      UI.toast('Create a bucket first to add tasks.', 'warning');
+      return;
+    }
+
+    hiddenBucketInput.value = effectiveBucketId;
+    hiddenTaskInput.value   = task ? task.id : '';
+
+    titleEl.textContent     = task ? 'Edit Task' : 'Add Task';
+    nameInput.value         = task ? (task.title || '') : '';
+    noteInput.value         = task ? (task.note  || '') : '';
+    prioritySelect.value    = task ? (task.priority || 'medium') : 'medium';
+    dueInput.value          = task ? (task.dueDate  || '') : '';
+
+    if (task || bucketId) {
+      bucketField.classList.add('hidden');
+      bucketSelect.disabled = true;
+    } else {
+      bucketField.classList.remove('hidden');
+      bucketSelect.disabled = false;
+    }
+
+    if (bucketSelect.options.length > 0) {
+      const match = Array.from(bucketSelect.options).find(opt => opt.value === effectiveBucketId);
+      bucketSelect.value = match ? effectiveBucketId : bucketSelect.options[0].value;
+      hiddenBucketInput.value = bucketSelect.value;
+    }
+
+    bucketSelect.onchange = (e) => {
+      hiddenBucketInput.value = e.target.value;
+    };
+
     UI.openModal('taskModal');
   }
 
@@ -288,6 +352,17 @@ const Tasks = (() => {
       _sort = e.target.value;
       renderFlatList();
     });
+
+    document.getElementById('addTaskBtn')?.addEventListener('click', () => {
+      openTaskModal(_bucketFilter || '');
+      if (_bucketFilter) {
+        document.getElementById('taskBucketField').classList.add('hidden');
+      }
+    });
+
+    document.getElementById('clearTaskFilterBtn')?.addEventListener('click', () => {
+      clearBucketFilter();
+    });
   }
 
   /* ---- Render a note field — linkify URLs ---- */
@@ -308,5 +383,39 @@ const Tasks = (() => {
       .replace(/"/g, '&quot;');
   }
 
-  return { createTaskItem, renderFlatList, openTaskModal, init };
+  function _updateActiveFilterBadge(count) {
+    const chip = document.getElementById('taskActiveFilter');
+    if (!chip) return;
+
+    if (_bucketFilter) {
+      const activeBucket = Storage.getBuckets().find(b => b.id === _bucketFilter);
+      if (!activeBucket) {
+        _bucketFilter = null;
+        chip.classList.add('hidden');
+        return;
+      }
+
+      chip.classList.remove('hidden');
+      const label = document.getElementById('taskActiveFilterLabel');
+      if (label) label.textContent = `${activeBucket.name} • ${count} task${count === 1 ? '' : 's'}`;
+    } else {
+      chip.classList.add('hidden');
+    }
+  }
+
+  function filterByBucket(bucket) {
+    if (!bucket) {
+      clearBucketFilter();
+      return;
+    }
+    _bucketFilter = bucket.id;
+    renderFlatList();
+  }
+
+  function clearBucketFilter() {
+    _bucketFilter = null;
+    renderFlatList();
+  }
+
+  return { createTaskItem, renderFlatList, openTaskModal, init, filterByBucket, clearBucketFilter };
 })();

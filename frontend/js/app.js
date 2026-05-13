@@ -3,6 +3,12 @@
    Wires everything together
    ================================================ */
 const App = (() => {
+  const DEFAULT_BUCKET_PRESETS = [
+    { name: 'Buckets', type: 'custom' },
+    { name: 'To-Do',   type: 'todo'   },
+    { name: 'Goals',   type: 'goals'  },
+    { name: 'Notes',   type: 'notes'  }
+  ];
 
   /* ---- Bootstrap on DOM ready ---- */
   function _init() {
@@ -25,6 +31,15 @@ const App = (() => {
     document.querySelectorAll('.mobile-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         document.getElementById('mobileMenu').classList.add('hidden');
+      });
+    });
+
+    /* Clear task filters when navigating directly via nav */
+    document.querySelectorAll('[data-page="tasks"]').forEach(link => {
+      link.addEventListener('click', () => {
+        if (typeof Tasks !== 'undefined' && Tasks.clearBucketFilter) {
+          Tasks.clearBucketFilter();
+        }
       });
     });
 
@@ -72,8 +87,14 @@ const App = (() => {
 
     if (shouldSyncRemote) {
       try {
-        const [bucketRes, goalRes, noteRes] = await Promise.all([
-          API.buckets.getAll(),
+        let bucketRes = await API.buckets.getAll();
+
+        if (bucketRes.ok && (!Array.isArray(bucketRes.data) || bucketRes.data.length === 0)) {
+          await _seedDefaultBucketsRemote();
+          bucketRes = await API.buckets.getAll();
+        }
+
+        const [goalRes, noteRes] = await Promise.all([
           API.goals.getAll(),
           API.notes.getAll()
         ]);
@@ -102,10 +123,14 @@ const App = (() => {
       }
     }
 
+    if (!shouldSyncRemote) {
+      _ensureOfflineDefaultBuckets();
+    }
+
     Buckets.renderAll();
     updateStats();
 
-    const current = Router.getCurrent?.() || 'home';
+    const current = Router.getCurrent?.() || 'buckets';
     if (current === 'tasks') Tasks.renderFlatList();
     if (current === 'goals') Goals.renderAll();
     if (current === 'notes') Notes.renderAll();
@@ -172,10 +197,50 @@ const App = (() => {
 
   /* ---- Called by Router on every page switch ---- */
   function onPageChange(page) {
-    if (page === 'home')  loadData();
+    if (page === 'buckets') loadData();
     if (page === 'tasks') Tasks.renderFlatList();
     if (page === 'goals') Goals.renderAll();
     if (page === 'notes') Notes.renderAll();
+  }
+
+  async function _seedDefaultBucketsRemote() {
+    for (const preset of DEFAULT_BUCKET_PRESETS) {
+      try {
+        await API.buckets.create(preset);
+      } catch (err) {
+        console.warn('Default bucket seed failed:', err);
+      }
+    }
+  }
+
+  function _ensureOfflineDefaultBuckets() {
+    const renameMap = [
+      { from: 'To Do',             update: { name: 'To-Do', type: 'todo' } },
+      { from: 'Long Term Goals',   update: { name: 'Goals', type: 'goals' } },
+      { from: 'Notes & Reminders', update: { name: 'Notes', type: 'notes' } }
+    ];
+
+    const buckets = Storage.getBuckets();
+    let mutated = false;
+
+    renameMap.forEach(({ from, update }) => {
+      const bucket = buckets.find(b => b.name === from);
+      if (bucket) {
+        Storage.updateBucket(bucket.id, update);
+        mutated = true;
+      }
+    });
+
+    if (!buckets.some(b => b.name === 'Buckets')) {
+      Storage.addBucket('Buckets', 'custom');
+      mutated = true;
+    }
+
+    if (mutated) {
+      // Refresh local cache to include any new IDs/types
+      const refreshed = Storage.getBuckets();
+      Storage.setBuckets(refreshed);
+    }
   }
 
   /* Start everything when DOM is ready */

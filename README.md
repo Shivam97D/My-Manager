@@ -76,6 +76,13 @@ All data is persisted in `localStorage` — no server needed.
 
 > **Tip:** The frontend is pure HTML/CSS/JS. There is no `package.json` here, so `npm run dev` is not required.
 
+### Navigation & Defaults
+
+- The default landing view is the **Buckets** dashboard — it mirrors the four primary tabs (Buckets, To-Do, Goals, Notes).
+- Every new workspace (offline or freshly created account) is seeded with default buckets for **Buckets**, **To-Do**, **Goals**, and **Notes** so the navigation always has matching data.
+- Clicking a bucket title jumps straight into the To-Do tab, automatically scoped to that bucket. A pill indicator shows the active scope and can be cleared in one tap.
+- The To-Do tab now includes a global **+ Add Task** button so you can add items without leaving the overview. When a bucket filter is active the modal preselects the right bucket for you.
+
 ### With full backend (local development)
 
 **1. Set up backend**

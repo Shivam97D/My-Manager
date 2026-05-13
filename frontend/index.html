@@ -22,10 +22,10 @@
       </div>
 
       <div class="nav-tabs" id="navTabs">
-        <a href="#home"  class="nav-tab active" data-page="home">Home</a>
-        <a href="#tasks" class="nav-tab" data-page="tasks">Tasks</a>
-        <a href="#goals" class="nav-tab" data-page="goals">Goals</a>
-        <a href="#notes" class="nav-tab" data-page="notes">Notes</a>
+        <a href="#buckets" class="nav-tab active" data-page="buckets">Buckets</a>
+        <a href="#tasks"   class="nav-tab" data-page="tasks">To-Do</a>
+        <a href="#goals"   class="nav-tab" data-page="goals">Goals</a>
+        <a href="#notes"   class="nav-tab" data-page="notes">Notes</a>
       </div>
 
       <div class="nav-actions">
@@ -48,10 +48,10 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu hidden" id="mobileMenu">
-      <a href="#home"  class="mobile-tab" data-page="home">🏠 Home</a>
-      <a href="#tasks" class="mobile-tab" data-page="tasks">✅ Tasks</a>
-      <a href="#goals" class="mobile-tab" data-page="goals">🎯 Goals</a>
-      <a href="#notes" class="mobile-tab" data-page="notes">📝 Notes</a>
+      <a href="#buckets" class="mobile-tab active" data-page="buckets">📂 Buckets</a>
+      <a href="#tasks"   class="mobile-tab" data-page="tasks">✅ To-Do</a>
+      <a href="#goals"   class="mobile-tab" data-page="goals">🎯 Goals</a>
+      <a href="#notes"   class="mobile-tab" data-page="notes">📝 Notes</a>
       <div class="mobile-auth-row" id="mobileAuthRow">
         <button class="btn btn-ghost btn-sm" id="mobileLoginBtn">Login</button>
         <button class="btn btn-primary btn-sm" id="mobileSignupBtn">Sign Up</button>
@@ -62,8 +62,8 @@
   <!-- ===== MAIN CONTENT ===== -->
   <main class="main-content">
 
-    <!-- HOME PAGE -->
-    <section class="page active" id="page-home">
+    <!-- BUCKETS PAGE -->
+    <section class="page active" id="page-buckets">
       <div class="page-header">
         <div>
           <h1 id="greetingText">Good morning, Shivam ✦</h1>
@@ -86,13 +86,18 @@
       <div class="bucket-grid" id="bucketGrid"></div>
     </section>
 
-    <!-- TASKS PAGE -->
+    <!-- TO-DO PAGE -->
     <section class="page" id="page-tasks">
       <div class="page-header">
         <div>
-          <h1>All Tasks</h1>
-          <p class="page-subtitle">Every task across all your buckets</p>
+          <h1>To-Do</h1>
+          <p class="page-subtitle">Everything queued across your buckets</p>
         </div>
+        <button class="btn btn-primary" id="addTaskBtn">+ Add Task</button>
+      </div>
+      <div class="task-active-filter hidden" id="taskActiveFilter">
+        <span id="taskActiveFilterLabel"></span>
+        <button class="btn-chip" id="clearTaskFilterBtn" type="button">Clear</button>
       </div>
       <div class="tasks-toolbar">
         <div class="search-box">
@@ -188,6 +193,10 @@
       <form id="taskForm">
         <input type="hidden" id="taskModalBucketId" aria-hidden="true" />
         <input type="hidden" id="taskModalTaskId" aria-hidden="true" />
+        <div class="form-group" id="taskBucketField">
+          <label>Bucket</label>
+          <select id="taskBucketSelect" class="input-field input-select" title="Select bucket" aria-label="Select bucket"></select>
+        </div>
         <div class="form-group">
           <label>Title *</label>
           <input type="text" id="taskTitleInput" class="input-field" placeholder="Task title" required />

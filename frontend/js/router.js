@@ -3,11 +3,11 @@
    Hash-based SPA routing
    ================================================ */
 const Router = (() => {
-  const VALID_PAGES = ['home', 'tasks', 'goals', 'notes'];
-  let _current = 'home';
+  const VALID_PAGES = ['buckets', 'tasks', 'goals', 'notes'];
+  let _current = 'buckets';
 
   function navigateTo(page) {
-    if (!VALID_PAGES.includes(page)) page = 'home';
+    if (!VALID_PAGES.includes(page)) page = 'buckets';
 
     /* Hide all pages */
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -29,12 +29,12 @@ const Router = (() => {
 
   function init() {
     window.addEventListener('hashchange', () => {
-      const hash = window.location.hash.slice(1) || 'home';
+      const hash = window.location.hash.slice(1) || 'buckets';
       navigateTo(hash);
     });
 
     /* Handle initial load */
-    const hash = window.location.hash.slice(1) || 'home';
+    const hash = window.location.hash.slice(1) || 'buckets';
     navigateTo(hash);
   }
 

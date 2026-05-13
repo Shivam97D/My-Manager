@@ -8,11 +8,13 @@ const Storage = (() => {
 
   /* --- Default data on first load --- */
   function _defaults() {
+    const now = new Date().toISOString();
     return {
       buckets: [
-        { id: uid(), name: 'To Do',             type: 'todo',   tasks: [], createdAt: new Date().toISOString() },
-        { id: uid(), name: 'Long Term Goals',   type: 'goals',  tasks: [], createdAt: new Date().toISOString() },
-        { id: uid(), name: 'Notes & Reminders', type: 'notes',  tasks: [], createdAt: new Date().toISOString() }
+        { id: uid(), name: 'Buckets', type: 'custom', tasks: [], createdAt: now },
+        { id: uid(), name: 'To-Do',   type: 'todo',   tasks: [], createdAt: now },
+        { id: uid(), name: 'Goals',   type: 'goals',  tasks: [], createdAt: now },
+        { id: uid(), name: 'Notes',   type: 'notes',  tasks: [], createdAt: now }
       ],
       goals: [],
       notes: []

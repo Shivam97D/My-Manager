@@ -20,6 +20,9 @@
 - [x] Add production middleware (helmet, compression, morgan) + multi-origin CORS
 - [x] Polish navbar user badge & greeting with profile emoji and first-name pull (2026-05-13 02:40 IST)
 - [x] Sync frontend data with backend (buckets, tasks, goals, notes CRUD) with offline fallback (2026-05-13 02:40 IST)
+- [x] Realign navigation tabs to Buckets / To-Do / Goals / Notes with scoped bucket drill-down (2026-05-13 03:25 IST)
+- [x] Seed default buckets for offline + remote users and migrate legacy names automatically (2026-05-13 03:25 IST)
+- [x] Enhance To-Do tab with quick add button, bucket filter chip, and mobile polish (2026-05-13 03:25 IST)
 
 ---
 
